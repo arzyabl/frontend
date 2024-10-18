@@ -4,8 +4,10 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useUserStore } from "@/stores/user";
 import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
+import MyCirclesView from "../views/MyCirclesView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import SettingView from "../views/SettingView.vue";
+import CirclePostsView from "../views/CirclePostsView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -19,6 +21,18 @@ const router = createRouter({
       path: "/setting",
       name: "Settings",
       component: SettingView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/circles",
+      name: "My Circles",
+      component: MyCirclesView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/circles/:id",
+      name: "Circle Posts",
+      component: CirclePostsView,
       meta: { requiresAuth: true },
     },
     {

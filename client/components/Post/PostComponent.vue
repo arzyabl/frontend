@@ -21,6 +21,7 @@ const deletePost = async () => {
 <template>
   <p class="author">{{ props.post.author }}</p>
   <p>{{ props.post.content }}</p>
+  <p>Group: {{ props.post.group }}</p>
   <div class="base">
     <menu v-if="props.post.author == currentUsername">
       <li><button class="btn-small pure-button" @click="emit('editPost', props.post._id)">Edit</button></li>

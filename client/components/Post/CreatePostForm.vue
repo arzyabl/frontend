@@ -3,12 +3,13 @@ import { ref } from "vue";
 import { fetchy } from "../../utils/fetchy";
 
 const content = ref("");
+const props = defineProps(["circle"]);
 const emit = defineEmits(["refreshPosts"]);
 
 const createPost = async (content: string) => {
   try {
     await fetchy("/api/posts", "POST", {
-      body: { content },
+      body: { content, group: props.circle },
     });
   } catch (_) {
     return;

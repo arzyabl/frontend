@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 
 import { Router, getExpressRouter } from "./framework/router";
 
-import { Authing, Friending, Posting, Sessioning } from "./app";
+import { Authing, Calendaring, Calling, Circling, Posting, Sessioning } from "./app";
 import { PostOptions } from "./concepts/posting";
 import { SessionDoc } from "./concepts/sessioning";
 import Responses from "./responses";
@@ -72,11 +72,14 @@ class Routes {
 
   @Router.get("/posts")
   @Router.validate(z.object({ author: z.string().optional() }))
-  async getPosts(author?: string) {
+  async getPosts(author?: string, group?: string) {
     let posts;
     if (author) {
-      const id = (await Authing.getUserByUsername(author))._id;
-      posts = await Posting.getByAuthor(id);
+      const user_id = (await Authing.getUserByUsername(author))._id;
+      posts = await Posting.getByAuthor(user_id);
+    } else if (group) {
+      const oid = new ObjectId(group);
+      posts = await Posting.getPostsByGroup(oid);
     } else {
       posts = await Posting.getPosts();
     }
@@ -84,9 +87,10 @@ class Routes {
   }
 
   @Router.post("/posts")
-  async createPost(session: SessionDoc, content: string, options?: PostOptions) {
+  async createPost(session: SessionDoc, content: string, group: string, timePost?: Date, options?: PostOptions) {
     const user = Sessioning.getUser(session);
-    const created = await Posting.create(user, content, options);
+    const oid = new ObjectId(group);
+    const created = await Posting.addPost(user, content, oid, timePost, options);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -94,8 +98,7 @@ class Routes {
   async updatePost(session: SessionDoc, id: string, content?: string, options?: PostOptions) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
-    await Posting.assertAuthorIsUser(oid, user);
-    return await Posting.update(oid, content, options);
+    return await Posting.editPost(user, oid, content, options);
   }
 
   @Router.delete("/posts/:id")
@@ -106,51 +109,263 @@ class Routes {
     return Posting.delete(oid);
   }
 
-  @Router.get("/friends")
-  async getFriends(session: SessionDoc) {
+  @Router.get("/circles/:id/leaderboard/posts")
+  async getPostLeaderboard(session: SessionDoc, circle: string) {
     const user = Sessioning.getUser(session);
-    return await Authing.idsToUsernames(await Friending.getFriends(user));
+    const circle_id = new ObjectId(circle);
+    await Circling.assertMemberIsUser(circle_id, user);
+    const leaderboard = await Posting.getPostLeaderboard(circle_id);
+    return leaderboard;
   }
 
-  @Router.delete("/friends/:friend")
-  async removeFriend(session: SessionDoc, friend: string) {
-    const user = Sessioning.getUser(session);
-    const friendOid = (await Authing.getUserByUsername(friend))._id;
-    return await Friending.removeFriend(user, friendOid);
+  @Router.post("/circles")
+  async createCircle(session: SessionDoc, title: string, capacity: number, difficultylevel: string) {
+    const admin = Sessioning.getUser(session);
+    const created = await Circling.createCircle(title, admin, capacity, difficultylevel);
+    //add text limit validation for title and description
+    return { msg: created.msg, circle: created.circle };
   }
 
-  @Router.get("/friend/requests")
-  async getRequests(session: SessionDoc) {
-    const user = Sessioning.getUser(session);
-    return await Responses.friendRequests(await Friending.getRequests(user));
+  @Router.get("/circles")
+  @Router.validate(
+    z.object({
+      title: z.string().optional(),
+      admin: z.string().optional(),
+      user: z.string().optional(),
+      difficultylevel: z.string().optional(),
+    }),
+  )
+  async getCircles(title?: string, admin?: string, user?: string, difficultylevel?: string) {
+    const filters: any = {};
+
+    if (title) filters.title = title;
+    if (admin) filters.admin = new ObjectId(admin);
+    if (user) filters.members = new ObjectId(user);
+    if (difficultylevel) filters.difficultylevel = difficultylevel;
+
+    return await Circling.getCircles(filters);
   }
 
-  @Router.post("/friend/requests/:to")
-  async sendFriendRequest(session: SessionDoc, to: string) {
-    const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.sendRequest(user, toOid);
+  @Router.get("/circles/:id")
+  async getCircleById(id: string) {
+    const oid = new ObjectId(id);
+    return await Circling.getCircleById(oid);
   }
 
-  @Router.delete("/friend/requests/:to")
-  async removeFriendRequest(session: SessionDoc, to: string) {
+  @Router.get("/circles/search")
+  async searchCircles(session: SessionDoc, keywordStr?: string) {
     const user = Sessioning.getUser(session);
-    const toOid = (await Authing.getUserByUsername(to))._id;
-    return await Friending.removeRequest(user, toOid);
+    let keywords: string[] = [];
+    if (keywordStr) {
+      keywords = keywordStr.split(" ");
+    }
+    return await Circling.searchCircles(user, keywords);
   }
 
-  @Router.put("/friend/accept/:from")
-  async acceptFriendRequest(session: SessionDoc, from: string) {
+  @Router.patch("/circles/:id/title")
+  async editCircle(session: SessionDoc, id: string, newTitle: string) {
     const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.acceptRequest(fromOid, user);
+    const oid = new ObjectId(id);
+    return await Circling.renameCircle(user, newTitle, oid);
   }
 
-  @Router.put("/friend/reject/:from")
-  async rejectFriendRequest(session: SessionDoc, from: string) {
+  @Router.patch("/circles/:id/members")
+  async joinCircle(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
-    const fromOid = (await Authing.getUserByUsername(from))._id;
-    return await Friending.rejectRequest(fromOid, user);
+    const oid = new ObjectId(id);
+    return await Circling.joinCircle(user, oid);
+  }
+
+  @Router.delete("/circles/:id/members")
+  async leaveCircle(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Circling.leaveCircle(user, oid);
+  }
+
+  @Router.delete("/circles")
+  async deleteCircle(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Circling.deleteCircle(user, oid);
+  }
+
+  @Router.get("/calls")
+  @Router.validate(z.object({ id: z.string().optional() }))
+  async getCalls(id?: string) {
+    let calls;
+    if (id) {
+      const oid = new ObjectId(id);
+      calls = await Calling.getCallById(oid);
+    } else {
+      calls = await Calling.getAllCalls();
+    }
+    return calls;
+  }
+
+  @Router.get("/calls/callers")
+  async getCurrentCallOfUser(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    return await Calling.getCurrentCallOfUser(user);
+  }
+
+  @Router.post("/calls")
+  async startCall(session: SessionDoc, circle: string) {
+    const admin = Sessioning.getUser(session);
+    const circle_oid = new ObjectId(circle);
+    await Circling.assertAdminIsUser(circle_oid, admin);
+    const created = await Calling.startCall(admin, circle_oid);
+    return { msg: created.msg, call: created.call };
+  }
+
+  @Router.patch("/calls/:id/participants")
+  async joinCall(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const call_oid = new ObjectId(id);
+    const circle_oid = await Calling.getGroupOfCall(call_oid);
+    //await Circling.assertMemberIsUser(circle_oid, user);
+    return await Calling.joinCall(user, call_oid);
+  }
+
+  @Router.patch("/calls/:id/listeners")
+  async listenerSwitch(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Calling.listenerSwitch(user, oid);
+  }
+
+  @Router.patch("/calls/:id/next")
+  async callNextSpeakerInCall(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Calling.callNextSpeaker(user, oid);
+  }
+
+  @Router.patch("/calls/:id/speakers")
+  async muteSwitch(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Calling.muteSwitch(user, oid);
+  }
+
+  @Router.delete("/calls/:id/participants")
+  async leaveCall(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    return await Calling.leaveCall(user, oid);
+  }
+
+  @Router.delete("/calls")
+  async endCallWithSummary(session: SessionDoc, id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(id);
+    const call = await Calling.getCallById(oid);
+    const content = `Call ${call._id} ended.`; //add more specific info
+
+    await Posting.addPost(user, content, call.group);
+
+    return await Calling.endCall(user, oid);
+  }
+
+  @Router.post("/events")
+  async createCircleEvent(
+    session: SessionDoc,
+    name: string,
+    circle: string,
+    type: string,
+    startTimeStr: string,
+    endTimeStr?: string,
+    prayerName?: "fajr" | "dhuhr" | "asr" | "maghrib" | "isha",
+    offsetMinutes?: number,
+    durationMinutes?: number,
+    latitude?: number,
+    longitude?: number,
+    recurrence?: [string, number],
+  ) {
+    const admin = Sessioning.getUser(session);
+    const circle_id = new ObjectId(circle);
+    await Circling.assertAdminIsUser(circle_id, admin);
+
+    // event based on prayer time
+    if (prayerName && latitude && longitude) {
+      const created = await Calendaring.createEventBasedOnPrayerTime(name, circle_id, admin, type, startTimeStr, prayerName, offsetMinutes, durationMinutes, latitude, longitude, recurrence);
+      return { msg: created.msg + " islamic", created };
+    } else if (startTimeStr && endTimeStr) {
+      // normal events with specific start and end times
+      const startTime = new Date(startTimeStr);
+      const endTime = new Date(endTimeStr);
+
+      const created = await Calendaring.createEvent(name, circle_id, admin, startTime, endTime, type, recurrence);
+      return { msg: created.msg, created };
+    } else {
+      throw new Error("You must provide either start/end times or prayer time details.");
+    }
+  }
+
+  @Router.get("/events/:id/startTime")
+  async getEventStartTime(id: string) {
+    const oid = new ObjectId(id);
+    return await Calendaring.getStartTimeOfEvent(oid);
+  }
+
+  @Router.get("/events")
+  async getEvents(session: SessionDoc, _id?: string, circle?: string) {
+    const user = Sessioning.getUser(session);
+    if (circle) {
+      const circle_id = new ObjectId(circle);
+      await Circling.assertMemberIsUser(circle_id, user);
+      return await Calendaring.getEventsOfCalendar(circle_id);
+    }
+
+    if (_id) {
+      const oid = new ObjectId(_id);
+      return await Calendaring.getEventById(oid);
+    }
+
+    return await Calendaring.getEvents();
+  }
+
+  @Router.delete("/events/:id")
+  async deleteEvent(session: SessionDoc, _id: string) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(_id);
+    await Calendaring.assertUserIsCreator(oid, user);
+    return await Calendaring.delete(oid);
+  }
+
+  @Router.patch("/events/:id")
+  async editEvent(session: SessionDoc, _id: string, name?: string, startTime?: Date, endTime?: Date, recurrence?: [string, number]) {
+    const user = Sessioning.getUser(session);
+    const oid = new ObjectId(_id);
+    await Calendaring.assertUserIsCreator(oid, user);
+    return await Calendaring.editEvent(oid, name, startTime, endTime, recurrence);
+  }
+
+  startUpcomingCallsCheck() {
+    const CHECK_INTERVAL_CALLS = 60 * 1000; // every minute
+    const CHECK_INTERVAL_HW = 60 * 60 * 1000; //every hour
+    setInterval(async () => {
+      await this.postAboutUpcomingEvents(10 * 60 * 1000, "call"); // before 1o min
+    }, CHECK_INTERVAL_CALLS);
+    setInterval(async () => {
+      await this.postAboutUpcomingEvents(24 * 60 * 60 * 1000, "deadline"); //before 24 hours
+    }, CHECK_INTERVAL_HW);
+  }
+
+  async postAboutUpcomingEvents(timeUntil: number, type: string) {
+    const upcomingTimeLimit = timeUntil;
+
+    const events = await Calendaring.getEvents(type); // Fetch your events
+
+    for (const event of events) {
+      const isEventUpcoming = await Calendaring.isUpcoming(event._id, upcomingTimeLimit);
+      if (isEventUpcoming) {
+        const message = `Upcoming event ${event.name} at ${event.startTime}`;
+        const circle_id = event.calendar;
+        const admin = await Circling.getCircleAdmin(circle_id);
+        await Posting.addPost(admin, message, circle_id);
+      }
+    }
   }
 }
 
