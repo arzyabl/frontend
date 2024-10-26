@@ -48,8 +48,10 @@ async function getCircle(circleId: string) {
 }
 
 function closeCall() {
-  void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
-  console.log("Call closed");
+  if (circle.value) {
+    void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
+    console.log("Call closed");
+  }
 }
 
 async function leaveCall(callId: string) {
@@ -58,7 +60,9 @@ async function leaveCall(callId: string) {
       body: { id: callId },
     });
     userStore.leaveACall();
-    void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
+    if (circle.value) {
+      void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
+    }
   } catch (_) {
     return;
   }
@@ -69,8 +73,10 @@ async function endCallForAll(callId: string) {
   try {
     await fetchy(`/api/calls/${callId}`, "DELETE");
     userStore.leaveACall(); // how to leave a call for everyone?
-    void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
-    console.log(`Ended call ${call.value._id} for all participants`);
+    if (circle.value) {
+      void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
+      console.log(`Ended call ${callId} for all participants`);
+    }
   } catch (_) {
     return;
   }
@@ -113,7 +119,9 @@ async function callNext(callId: string) {
 onBeforeMount(async () => {
   await getUser(currentUsername.value);
   await getCall(props.callId);
-  await getCircle(call.value.group);
+  if (call.value) {
+    await getCircle(call.value.group);
+  }
   loaded.value = true;
 });
 </script>
