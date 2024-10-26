@@ -9,9 +9,11 @@ export const useUserStore = defineStore(
     const currentUsername = ref("");
 
     const isLoggedIn = computed(() => currentUsername.value !== "");
+    const isOnCall = ref(false); // Track if the user is on a call
 
     const resetStore = () => {
       currentUsername.value = "";
+      isOnCall.value = false;
     };
 
     const createUser = async (username: string, password: string) => {
@@ -53,9 +55,18 @@ export const useUserStore = defineStore(
       resetStore();
     };
 
+    const joinACall = () => {
+      isOnCall.value = true;
+    };
+
+    const leaveACall = () => {
+      isOnCall.value = false;
+    };
+
     return {
       currentUsername,
       isLoggedIn,
+      isOnCall,
       createUser,
       loginUser,
       updateSession,
@@ -63,6 +74,8 @@ export const useUserStore = defineStore(
       updateUserUsername,
       updateUserPassword,
       deleteUser,
+      joinACall,
+      leaveACall,
     };
   },
   { persist: true },

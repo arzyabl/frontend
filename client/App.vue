@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import router from "@/router";
 import { useToastStore } from "@/stores/toast";
 import { useUserStore } from "@/stores/user";
 import { storeToRefs } from "pinia";
@@ -15,8 +16,10 @@ const { toast } = storeToRefs(useToastStore());
 onBeforeMount(async () => {
   try {
     await userStore.updateSession();
+    await router.push("/circles");
   } catch {
     // User is not logged in
+    await router.push("/login");
   }
 });
 </script>

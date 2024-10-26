@@ -71,26 +71,33 @@ class Routes {
   }
 
   @Router.get("/posts")
-  @Router.validate(z.object({ author: z.string().optional() }))
+  //@Router.validate(z.object({ author: z.string().optional() }))
   async getPosts(author?: string, group?: string) {
     let posts;
     if (author) {
+      console.log("seaching for author");
       const user_id = (await Authing.getUserByUsername(author))._id;
       posts = await Posting.getByAuthor(user_id);
     } else if (group) {
+      console.log("seaching for group: " + group);
       const oid = new ObjectId(group);
       posts = await Posting.getPostsByGroup(oid);
     } else {
+      console.log("getting all posts");
       posts = await Posting.getPosts();
     }
     return Responses.posts(posts);
   }
 
   @Router.post("/posts")
-  async createPost(session: SessionDoc, content: string, group: string, timePost?: Date, options?: PostOptions) {
+  //@Router.validate(z.object({ content: z.string(), circle: z.string(),  }))
+  async createPost(session: SessionDoc, content: string, circle: string, timePost?: Date, options?: PostOptions) {
     const user = Sessioning.getUser(session);
-    const oid = new ObjectId(group);
-    const created = await Posting.addPost(user, content, oid, timePost, options);
+    console.log("session: " + session);
+    console.log("circle: " + circle);
+    const oid = new ObjectId(circle);
+    await Circling.assertMemberIsUser(oid, user);
+    const created = await Posting.addPost(user, content, oid);
     return { msg: created.msg, post: await Responses.post(created.post) };
   }
 
@@ -126,30 +133,30 @@ class Routes {
     return { msg: created.msg, circle: created.circle };
   }
 
+  @Router.get("/circles/:id")
+  async getCircleById(id: string) {
+    const oid = new ObjectId(id);
+    return await Circling.getCircleById(oid);
+  }
+
   @Router.get("/circles")
   @Router.validate(
     z.object({
       title: z.string().optional(),
       admin: z.string().optional(),
-      user: z.string().optional(),
+      member: z.string().optional(),
       difficultylevel: z.string().optional(),
     }),
   )
-  async getCircles(title?: string, admin?: string, user?: string, difficultylevel?: string) {
+  async getCircles(title?: string, admin?: string, member?: string, difficultylevel?: string) {
     const filters: any = {};
 
     if (title) filters.title = title;
     if (admin) filters.admin = new ObjectId(admin);
-    if (user) filters.members = new ObjectId(user);
+    if (member) filters.member = new ObjectId(member);
     if (difficultylevel) filters.difficultylevel = difficultylevel;
 
     return await Circling.getCircles(filters);
-  }
-
-  @Router.get("/circles/:id")
-  async getCircleById(id: string) {
-    const oid = new ObjectId(id);
-    return await Circling.getCircleById(oid);
   }
 
   @Router.get("/circles/search")
@@ -183,7 +190,7 @@ class Routes {
     return await Circling.leaveCircle(user, oid);
   }
 
-  @Router.delete("/circles")
+  @Router.delete("/circles/:id")
   async deleteCircle(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
@@ -191,23 +198,24 @@ class Routes {
   }
 
   @Router.get("/calls")
-  @Router.validate(z.object({ id: z.string().optional() }))
-  async getCalls(id?: string) {
-    let calls;
-    if (id) {
-      const oid = new ObjectId(id);
-      calls = await Calling.getCallById(oid);
-    } else {
-      calls = await Calling.getAllCalls();
-    }
-    return calls;
-  }
-
-  @Router.get("/calls/callers")
-  async getCurrentCallOfUser(session: SessionDoc) {
+  async getCurrentCall(session: SessionDoc) {
     const user = Sessioning.getUser(session);
     return await Calling.getCurrentCallOfUser(user);
   }
+
+  @Router.get("/calls/:id")
+  @Router.validate(z.object({ id: z.string().optional() }))
+  async getCall(id: string) {
+    const oid = new ObjectId(id);
+    return await Calling.getCallById(oid);
+  }
+
+  // @Router.get("/calls/:username")
+  // async getCurrentCallOfUser(session: SessionDoc) {
+  //   const user = Sessioning.getUser(session);
+  //   console.log(user);
+  //   return await Calling.getCurrentCallOfUser(user);
+  // }
 
   @Router.post("/calls")
   async startCall(session: SessionDoc, circle: string) {
@@ -255,8 +263,9 @@ class Routes {
     return await Calling.leaveCall(user, oid);
   }
 
-  @Router.delete("/calls")
+  @Router.delete("/calls/:id")
   async endCallWithSummary(session: SessionDoc, id: string) {
+    console.log("deleting event " + id);
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
     const call = await Calling.getCallById(oid);

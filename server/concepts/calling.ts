@@ -135,7 +135,11 @@ export default class CallingConcept {
     const call = await this.calls.readOne({ _id: callId });
     if (!call) throw new NotFoundError(`Call ${callId} does not exist`);
 
-    await this.assertUserOnCall(callId, user);
+    try {
+      await this.assertUserIsAdmin(callId, user);
+    } catch (error) {
+      await this.assertUserOnCall(callId, user);
+    }
 
     const isCurrentlySpeaker = call.speakers.some((speaker) => speaker.toString() === user.toString());
 

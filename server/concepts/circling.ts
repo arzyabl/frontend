@@ -49,7 +49,7 @@ export default class CirclingConcept {
     }
 
     if (filters?.member) {
-      query.members = filters.member;
+      query.members = { $in: [filters.member] };
     }
 
     if (filters?.difficultylevel) {

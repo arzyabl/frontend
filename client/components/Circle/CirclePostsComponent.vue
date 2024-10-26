@@ -2,6 +2,7 @@
 import CreatePostForm from "@/components/Post/CreatePostForm.vue";
 import EditPostForm from "@/components/Post/EditPostForm.vue";
 import PostComponent from "@/components/Post/PostComponent.vue";
+import router from "@/router";
 import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
@@ -29,6 +30,7 @@ async function getPosts(circleId: string) {
 
 async function getCircle(circleId: string) {
   try {
+    //console.log(circleId);
     const circleResult = await fetchy(`/api/circles/${circleId}`, "GET");
     circle.value = circleResult;
   } catch (_) {
@@ -40,6 +42,11 @@ function updateEditing(id: string) {
   editing.value = id;
 }
 
+function openCircleDetails(circleId: string) {
+  console.log(`Opening circle  details with ID: ${circleId}`);
+  void router.push({ name: "Circle Details", params: { id: circleId } });
+}
+
 onBeforeMount(async () => {
   await getCircle(props.circleId);
   await getPosts(props.circleId);
@@ -48,10 +55,9 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <div class="circle">
+  <div class="circle" @click="openCircleDetails(props.circleId)">
     <h1 v-if="circle">{{ circle.title }}</h1>
     <h1 v-else>Loading</h1>
-    <SearchPostForm @getPostsByAuthor="getPosts" />
   </div>
   <section class="posts" v-if="loaded && posts.length !== 0">
     <article v-for="post in posts" :key="post._id">
@@ -63,7 +69,7 @@ onBeforeMount(async () => {
   <p v-else>Loading...</p>
   <section v-if="isLoggedIn">
     <h2>Create a post:</h2>
-    <CreatePostForm @circle="props.circleId" @refreshPosts="getPosts" />
+    <CreatePostForm :circle="props.circleId" @refreshPosts="getPosts" />
   </section>
 </template>
 

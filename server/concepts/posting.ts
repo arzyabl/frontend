@@ -43,13 +43,12 @@ export default class PostingConcept {
     return await this.posts.readMany({}, { sort: { _id: -1 } });
   }
   async getPostsByGroup(group: ObjectId) {
-    return await this.posts.readMany({ group }, { sort: { timePost: -1 } });
+    return await this.posts.readMany({ group: group }, { sort: { timePost: -1 } });
   }
 
   async getByAuthor(author: ObjectId) {
     return await this.posts.readMany({ author }, { sort: { timePost: -1 } });
   }
-
 
   async getPostLeaderboard(circle: ObjectId) {
     const posts = await this.getPostsByGroup(circle);
@@ -71,8 +70,7 @@ export default class PostingConcept {
       .sort((a, b) => b.totalPosts - a.totalPosts);
 
     return leaderboard;
-}
-
+  }
 
   async delete(_id: ObjectId) {
     await this.posts.deleteOne({ _id });

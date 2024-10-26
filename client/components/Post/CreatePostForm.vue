@@ -9,12 +9,12 @@ const emit = defineEmits(["refreshPosts"]);
 const createPost = async (content: string) => {
   try {
     await fetchy("/api/posts", "POST", {
-      body: { content, group: props.circle },
+      body: { content: content, circle: props.circle },
     });
   } catch (_) {
     return;
   }
-  emit("refreshPosts");
+  emit("refreshPosts", props.circle);
   emptyForm();
 };
 

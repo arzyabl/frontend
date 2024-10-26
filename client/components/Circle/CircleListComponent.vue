@@ -8,19 +8,30 @@ import { onBeforeMount, ref } from "vue";
 
 const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 
+const props = defineProps(["member"]);
 const loaded = ref(false);
 let circles = ref<Array<Record<string, string>>>([]);
+let userId = ref("");
 let searchCircle = ref("");
 
-async function getCircles(member: string) {
-  let query: Record<string, string> = member !== undefined ? { member } : {};
+async function getCircles() {
   let circleResults;
+  let query: Record<string, string> = { member: userId.value };
   try {
     circleResults = await fetchy("/api/circles", "GET", { query });
   } catch (_) {
     return;
   }
   circles.value = circleResults;
+  console.log("gor circles: " + circles.value);
+}
+
+async function getUserId(username: string) {
+  try {
+    userId.value = (await fetchy(`/api/users/${username}`, "GET"))._id;
+  } catch (_) {
+    return;
+  }
 }
 
 function openCircle(circleId: string) {
@@ -29,12 +40,16 @@ function openCircle(circleId: string) {
 }
 
 onBeforeMount(async () => {
-  await getCircles(currentUsername.value);
+  console.log("tryin to get circles of member: " + props.member.value);
+  await getUserId(currentUsername.value);
+  await getCircles();
+
   loaded.value = true;
 });
 </script>
 
 <template>
+  <p>{{ userId }}</p>
   <section class="circles" v-if="isLoggedIn && loaded && circles.length !== 0">
     <article v-for="circle in circles" :key="circle._id">
       <CircleComponent :circle="circle" @openCircle="openCircle" />
