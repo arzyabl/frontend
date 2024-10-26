@@ -9,7 +9,6 @@ const { currentUsername } = storeToRefs(useUserStore());
 
 <template>
   <div @click="$emit('openCircle', props.circle._id)">
-    <p>{{ props.circle.members }}</p>
     <p class="circle">{{ props.circle.title }}</p>
   </div>
 </template>

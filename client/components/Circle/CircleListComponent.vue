@@ -49,7 +49,6 @@ onBeforeMount(async () => {
 </script>
 
 <template>
-  <p>{{ userId }}</p>
   <section class="circles" v-if="isLoggedIn && loaded && circles.length !== 0">
     <article v-for="circle in circles" :key="circle._id">
       <CircleComponent :circle="circle" @openCircle="openCircle" />
