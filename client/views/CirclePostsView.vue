@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import CirclePostsComponent from "@/components/Circle/CirclePostsComponent.vue";
-import { useUserStore } from "@/stores/user";
-import { storeToRefs } from "pinia";
 // import { fetchy } from "@/utils/fetchy";
 // const { currentUsername, isLoggedIn } = storeToRefs(useUserStore());
 

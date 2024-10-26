@@ -137,7 +137,8 @@ export default class CallingConcept {
 
     try {
       await this.assertUserIsAdmin(callId, user);
-    } catch (error) {
+    } catch (e) {
+      console.log(e);
       await this.assertUserOnCall(callId, user);
     }
 

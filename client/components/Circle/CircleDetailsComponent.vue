@@ -44,6 +44,10 @@ async function startCall() {
   }
 }
 
+async function joinCall() {
+  console.log("under implementation");
+}
+
 async function returnToCall() {
   try {
     const call = await fetchy(`/api/calls`, "GET");
@@ -72,7 +76,6 @@ onBeforeMount(async () => {
   <section class="circleControl" v-if="circle && isLoggedIn">
     <!-- Display circle details when the circle object is available -->
     <h1>{{ circle.title }}</h1>
-    <p v-if="call">Call in progress</p>
 
     <div class="menu">
       <menu>

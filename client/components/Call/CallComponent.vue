@@ -17,7 +17,7 @@ let circle = ref<Record<string, string> | null>(null);
 const isMuted = ref(true);
 
 const isAdmin = computed(() => {
-  return call.value && call.value.admin === user.value._id;
+  return user.value && call.value && call.value.admin === user.value._id;
 });
 
 async function getUser(username: string) {
