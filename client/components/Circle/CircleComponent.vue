@@ -28,8 +28,12 @@ onBeforeMount(async () => {
 });
 
 const truncatedContent = computed(() => {
-  const preview = lastPost.value.content.substring(0, 25);
-  return `${preview}...`;
+  if (lastPost.value) {
+    const preview = lastPost.value.content.substring(0, 25);
+    return `${lastPost.value.author}: ${preview}...`;
+  } else {
+    return "No posts yet.";
+  }
 });
 </script>
 
@@ -41,8 +45,7 @@ const truncatedContent = computed(() => {
     </div>
     <div class="circle-info">
       <p class="circle-title">{{ props.circle.title }}</p>
-      <p v-if="lastPost" class="last-post">{{ lastPost.author }}: {{ truncatedContent }}</p>
-      <p v-else class="last-post">No posts yet.</p>
+      <p class="last-post">{{ truncatedContent }}</p>
     </div>
   </div>
 </template>

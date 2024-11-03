@@ -26,7 +26,7 @@ async function getNonmemberCircles() {
   try {
     circleResults = await fetchy("/api/circles", "GET");
     console.log(circles);
-    circles.value = circleResults.filter((circle) => !circle.members.includes(userId.value));
+    circles.value = circleResults.filter((circle: { members: string | string[] }) => !circle.members.includes(userId.value));
     console.log("got circles: " + circles.value);
   } catch (_) {
     return;
