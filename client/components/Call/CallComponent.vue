@@ -126,7 +126,7 @@ onBeforeMount(async () => {
 });
 </script>
 <template>
-  <div v-if="loaded && circle && call">
+  <div v-if="loaded && circle && call" class="call-container">
     <!-- Header with controls -->
     <header class="call-header">
       <button @click="closeCall">Close</button>
@@ -156,13 +156,11 @@ onBeforeMount(async () => {
     </section>
 
     <!-- Controls at the bottom -->
-    <footer class="call-footer">
-      <footer class="call-footer">
-        <button @click="toggleMute(call._id)">{{ isMuted ? "Unmute" : "Mute" }}</button>
-        <button v-if="isAdmin" @click="callNext(call._id)">Call next</button>
-        <button v-else @click="toggleOnlyListen(call._id)">Only listen</button>
-      </footer>
-    </footer>
+    <div class="call-control">
+      <button @click="toggleMute(call._id)">{{ isMuted ? "Unmute" : "Mute" }}</button>
+      <button v-if="isAdmin" @click="callNext(call._id)">Call next</button>
+      <button v-else @click="toggleOnlyListen(call._id)">Only listen</button>
+    </div>
   </div>
 
   <div v-else>
@@ -171,11 +169,26 @@ onBeforeMount(async () => {
 </template>
 
 <style scoped>
-.call-header {
+.call-container {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
-  background-color: #e0e0e0;
+  overflow: hidden; /* Prevent scrolling */
+}
+
+.call-header {
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  background-color: #ccc;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 1em;
 }
 
 .circle-name {
@@ -183,10 +196,11 @@ onBeforeMount(async () => {
 }
 
 .participants-area {
+  flex-grow: 1;
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 20px;
+  padding-top: 5em;
 }
 
 .participant-circle {
@@ -213,10 +227,9 @@ onBeforeMount(async () => {
   font-size: 30px;
 }
 
-.call-footer {
+.call-control {
   display: flex;
-  justify-content: space-around;
+  justify-content: space-between;
   padding: 10px;
-  background-color: #f0f0f0;
 }
 </style>

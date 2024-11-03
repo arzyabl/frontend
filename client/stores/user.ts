@@ -38,8 +38,15 @@ export const useUserStore = defineStore(
     };
 
     const logoutUser = async () => {
-      await fetchy("/api/logout", "POST");
-      resetStore();
+      if (isOnCall.value) {
+        alert("You cannot log out while on a call.");
+      }
+      try {
+        await fetchy("/api/logout", "POST");
+        resetStore();
+      } catch (_) {
+        return;
+      }
     };
 
     const updateUserUsername = async (username: string) => {

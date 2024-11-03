@@ -1,51 +1,113 @@
 <script setup lang="ts">
 import { useUserStore } from "@/stores/user";
+import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
+import { computed, onBeforeMount, ref } from "vue";
 
 const props = defineProps(["circle"]);
 const emit = defineEmits(["openCircle"]);
 const { currentUsername } = storeToRefs(useUserStore());
+
+const loaded = ref(false);
+const lastPost = ref<Record<string, any> | null>(null);
+
+async function fetchLastPost() {
+  let query: Record<string, string> = { group: props.circle._id };
+  let postResults;
+  try {
+    postResults = await fetchy("/api/posts/", "GET", { query });
+    lastPost.value = postResults[postResults.length - 1];
+  } catch (error) {
+    console.error("Error fetching the last post:", error);
+  }
+}
+
+onBeforeMount(async () => {
+  await fetchLastPost();
+  loaded.value = true;
+});
+
+const truncatedContent = computed(() => {
+  const preview = lastPost.value.content.substring(0, 25);
+  return `${preview}...`;
+});
 </script>
 
 <template>
-  <div @click="$emit('openCircle', props.circle._id)">
-    <p class="circle">{{ props.circle.title }}</p>
+  <div class="circle-container" @click="$emit('openCircle', props.circle._id)">
+    <div class="circle-avatar">
+      <img v-if="props.circle.avatar" :src="props.circle.avatar" alt="Circle Avatar" />
+      <div v-else class="empty-avatar"></div>
+    </div>
+    <div class="circle-info">
+      <p class="circle-title">{{ props.circle.title }}</p>
+      <p v-if="lastPost" class="last-post">{{ lastPost.author }}: {{ truncatedContent }}</p>
+      <p v-else class="last-post">No posts yet.</p>
+    </div>
   </div>
 </template>
 
 <style scoped>
-p {
-  margin: 0em;
+.circle-container {
+  padding: 1em;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.circle-container:hover {
+  background-color: #f1f1f1;
+}
+
+.circle-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f0f0f0;
+}
+
+.circle-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.empty-avatar {
+  width: 100%;
+  height: 100%;
+  background-color: #ccc;
+  border-radius: 50%;
+}
+
+.circle-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.circle-title {
+  font-weight: bold;
+  font-size: 1.3em;
+  margin-bottom: 0.3em;
+}
+
+.last-post {
+  font-size: 0.9em;
+  color: #555;
+  line-height: 1.4;
 }
 
 .author {
   font-weight: bold;
-  font-size: 1.2em;
-}
-
-menu {
-  list-style-type: none;
-  display: flex;
-  flex-direction: row;
-  gap: 1em;
-  padding: 0;
-  margin: 0;
-}
-
-.timestamp {
-  display: flex;
-  justify-content: flex-end;
-  font-size: 0.9em;
-  font-style: italic;
-}
-
-.base {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.base article:only-child {
-  margin-left: auto;
+  color: #333;
 }
 </style>

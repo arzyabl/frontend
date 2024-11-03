@@ -12,7 +12,6 @@ const props = defineProps(["member"]);
 const loaded = ref(false);
 let circles = ref<Array<Record<string, string>>>([]);
 let userId = ref("");
-let searchCircle = ref("");
 
 async function getCircles() {
   let circleResults;
@@ -23,7 +22,7 @@ async function getCircles() {
     return;
   }
   circles.value = circleResults;
-  console.log("gor circles: " + circles.value);
+  //console.log("got circles: " + circles.value);
 }
 
 async function getUserId(username: string) {
@@ -40,7 +39,7 @@ function openCircle(circleId: string) {
 }
 
 onBeforeMount(async () => {
-  console.log("tryin to get circles of member: " + props.member.value);
+  //console.log("tryin to get circles of member: " + props.member.value);
   await getUserId(currentUsername.value);
   await getCircles();
 
@@ -59,36 +58,14 @@ onBeforeMount(async () => {
 </template>
 
 <style scoped>
-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1em;
-}
-
-section,
-p,
-.row {
-  margin: 0 auto;
-  max-width: 60em;
-}
-
-article {
-  background-color: var(--base-bg);
-  border-radius: 1em;
-  display: flex;
-  flex-direction: column;
+section.circles {
   gap: 0.5em;
-  padding: 1em;
+  max-width: 25em;
 }
 
-.posts {
-  padding: 1em;
-}
-
-.row {
-  display: flex;
-  justify-content: space-between;
-  margin: 0 auto;
-  max-width: 60em;
+.circles h1 {
+  font-size: 1.5em;
+  font-weight: bold;
+  text-align: center;
 }
 </style>

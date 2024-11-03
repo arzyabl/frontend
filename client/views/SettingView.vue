@@ -8,13 +8,17 @@ const { currentUsername } = storeToRefs(useUserStore());
 const { logoutUser, deleteUser } = useUserStore();
 
 async function logout() {
-  await logoutUser();
-  void router.push({ name: "Home" });
+  try {
+    await logoutUser();
+    void router.push({ name: "Login" });
+  } catch (_) {
+    return;
+  }
 }
 
 async function delete_() {
   await deleteUser();
-  void router.push({ name: "Home" });
+  void router.push({ name: "Login" });
 }
 </script>
 

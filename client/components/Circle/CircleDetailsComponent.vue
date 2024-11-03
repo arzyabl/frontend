@@ -46,6 +46,7 @@ async function startCall() {
 
 async function joinCall() {
   console.log("under implementation");
+  //try get call of circle and then join call
 }
 
 async function returnToCall() {
@@ -70,12 +71,27 @@ onBeforeMount(async () => {
   await getUser(currentUsername.value);
   loaded.value = true;
 });
+
+function goBack() {
+  if (circle.value) {
+    void router.push({ name: "Circle Posts", params: { id: circle.value._id } });
+  }
+}
 </script>
 
 <template>
   <section class="circleControl" v-if="circle && isLoggedIn">
     <!-- Display circle details when the circle object is available -->
-    <h1>{{ circle.title }}</h1>
+    <div class="circle-header">
+      <button class="back-button" @click.stop="goBack">←</button>
+      <div class="title-avatar">
+        <div v-if="circle && circle.avatar" class="circle-avatar-container">
+          <img :src="circle.avatar" alt="Circle Avatar" class="circle-avatar" />
+        </div>
+        <div v-else class="empty-circle-avatar"></div>
+        <h1>{{ circle.title }}</h1>
+      </div>
+    </div>
 
     <div class="menu">
       <menu>
@@ -101,11 +117,18 @@ onBeforeMount(async () => {
       </menu>
     </div>
 
+    <div>
+      <p v-if="circle.description">Description: {{ circle.description }}</p>
+      <p v-else>No description available</p>
+    </div>
+
     <!-- Loop through members if available -->
     <h2>Members</h2>
-    <article v-for="userId in circle.members" :key="userId">
-      <UserComponent :userId="userId" />
-    </article>
+    <div class="members">
+      <article v-for="userId in circle.members" :key="userId">
+        <UserComponent :userId="userId" />
+      </article>
+    </div>
   </section>
 
   <!-- Show a loading message when circle is not available -->
@@ -113,17 +136,55 @@ onBeforeMount(async () => {
     <h1>Loading</h1>
   </div>
 </template>
-
 <style scoped>
-section {
+.circleControl {
   display: flex;
   flex-direction: column;
   gap: 1em;
+  text-align: center;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
-.author {
-  font-weight: bold;
-  font-size: 1.2em;
+.circle-header {
+  padding: 1em;
+  justify-content: center;
+}
+
+.title-avatar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.back-button {
+  position: absolute;
+  left: 1em;
+}
+
+.circle-avatar-container {
+  width: 80px;
+  height: 80px;
+}
+
+.circle-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.empty-circle-avatar {
+  width: 80px;
+  height: 80px;
+  background-color: #fffefe;
+  border-radius: 50%;
+}
+
+.menu {
+  margin-top: 10em;
 }
 
 menu {
@@ -135,10 +196,8 @@ menu {
   margin: 0;
 }
 
-.circleControl {
-  text-align: center;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.members {
+  background-color: #ccc;
+  border-radius: 8px;
 }
 </style>

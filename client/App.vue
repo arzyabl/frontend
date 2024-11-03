@@ -11,29 +11,30 @@ const currentRouteName = computed(() => currentRoute.name);
 const userStore = useUserStore();
 const { isLoggedIn } = storeToRefs(userStore);
 const { toast } = storeToRefs(useToastStore());
-
-// Make sure to update the session before mounting the app in case the user is already logged in
 onBeforeMount(async () => {
   try {
     await userStore.updateSession();
-    await router.push("/circles");
+    if (isLoggedIn.value) {
+      await router.push("/circles");
+    } else {
+      await router.push("/login");
+    }
   } catch {
-    // User is not logged in
     await router.push("/login");
   }
 });
 </script>
 
 <template>
-  <header>
+  <main>
+    <RouterView />
+  </main>
+  <footer>
     <nav>
-      <div class="title">
-        <img src="@/assets/images/logo.svg" />
-        <RouterLink :to="{ name: 'My Circles' }">
-          <h1>Social Media App</h1>
-        </RouterLink>
-      </div>
       <ul>
+        <li>
+          <RouterLink :to="{ name: 'Browse Circles' }" :class="{ underline: currentRouteName == 'Browse Circles' }"> Browse</RouterLink>
+        </li>
         <li>
           <RouterLink :to="{ name: 'My Circles' }" :class="{ underline: currentRouteName == 'My Circles' }"> My Circles </RouterLink>
         </li>
@@ -45,54 +46,63 @@ onBeforeMount(async () => {
         </li>
       </ul>
     </nav>
-    <article v-if="toast !== null" class="toast" :class="toast.style">
-      <p>{{ toast.message }}</p>
-    </article>
-  </header>
-  <RouterView />
+  </footer>
 </template>
 
 <style scoped>
 @import "./assets/toast.css";
 
-nav {
-  padding: 1em 2em;
-  background-color: lightgray;
-  display: flex;
-  align-items: center;
-}
-
-h1 {
-  font-size: 2em;
-  margin: 0;
-}
-
 .title {
   display: flex;
   align-items: center;
-  gap: 0.5em;
+  flex-grow: 1;
+  justify-content: center;
+  position: relative;
 }
 
-img {
-  height: 2em;
-}
-
-a {
-  font-size: large;
-  color: black;
+h1 {
+  font-size: 1.5em;
+  margin: 0;
   text-decoration: none;
 }
 
-ul {
-  list-style-type: none;
-  margin-left: auto;
+img {
+  height: 40px;
+  width: auto;
+}
+
+main {
+  flex: 1;
+  padding: 2em;
+  margin-bottom: 60px;
+}
+
+footer {
+  position: fixed;
+  background-color: lightgrey;
+  bottom: 0;
+  width: 100%;
+  padding: 1em 0;
   display: flex;
-  align-items: center;
-  flex-direction: row;
-  gap: 1em;
+  justify-content: center;
+}
+
+nav ul {
+  list-style-type: none;
+  display: flex;
+  gap: 1.5em;
+  padding: 0;
+  margin: 0;
 }
 
 .underline {
   text-decoration: underline;
+}
+
+.toast {
+  position: fixed;
+  top: 1em;
+  right: 1em;
+  z-index: 1000;
 }
 </style>

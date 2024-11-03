@@ -66,6 +66,8 @@ class Routes {
 
   @Router.post("/logout")
   async logOut(session: SessionDoc) {
+    const user = Sessioning.getUser(session);
+    await Calling.assertUserNotOnACall(user);
     Sessioning.end(session);
     return { msg: "Logged out!" };
   }
@@ -126,9 +128,9 @@ class Routes {
   }
 
   @Router.post("/circles")
-  async createCircle(session: SessionDoc, title: string, capacity: number, difficultylevel: string) {
+  async createCircle(session: SessionDoc, title: string, type: string, capacity: number, difficultylevel: string, description: string) {
     const admin = Sessioning.getUser(session);
-    const created = await Circling.createCircle(title, admin, capacity, difficultylevel);
+    const created = await Circling.createCircle(title, admin, type, capacity, difficultylevel, description);
     //add text limit validation for title and description
     return { msg: created.msg, circle: created.circle };
   }
@@ -230,7 +232,7 @@ class Routes {
   async joinCall(session: SessionDoc, id: string) {
     const user = Sessioning.getUser(session);
     const call_oid = new ObjectId(id);
-    const circle_oid = await Calling.getGroupOfCall(call_oid);
+    //const circle_oid = await Calling.getGroupOfCall(call_oid);
     //await Circling.assertMemberIsUser(circle_oid, user);
     return await Calling.joinCall(user, call_oid);
   }

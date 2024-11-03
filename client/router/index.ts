@@ -5,10 +5,12 @@ import { useUserStore } from "@/stores/user";
 import CallView from "../views/CallView.vue";
 import CircleDetailsView from "../views/CircleDetailsView.vue";
 import CirclePostsView from "../views/CirclePostsView.vue";
+import CreateCircleView from "../views/CreateCircleView.vue";
 import LoginView from "../views/LoginView.vue";
 import MyCirclesView from "../views/MyCirclesView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import SettingView from "../views/SettingView.vue";
+import BrowseView from "../views/BrowseView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -17,6 +19,12 @@ const router = createRouter({
       path: "/setting",
       name: "Settings",
       component: SettingView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: "/browse",
+      name: "Browse Circles",
+      component: BrowseView,
       meta: { requiresAuth: true },
     },
     {
@@ -40,12 +48,18 @@ const router = createRouter({
     },
 
     {
+      path: "/circles/create/",
+      name: "Create Circle",
+      component: CreateCircleView,
+      meta: { requiresAuth: true },
+    },
+
+    {
       path: "/calls/:callId/",
       name: "Call",
       component: CallView,
       meta: { requiresAuth: true },
     },
-
     {
       path: "/login",
       name: "Login",
